@@ -1,0 +1,447 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notes on Principles of Computer System Design | Benjamin Shen's Blog</title><meta name="author" content="Benjamin Shen"><meta name="copyright" content="Benjamin Shen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><meta name="description" content="Chapter 1：Systems系统问题：突生属性、传播效应、扩展不相称和权衡 系统分析：如何划分组件、粒度、系统边界、外部接口 复杂性：组件数量大，互连多，不规则情况多，描述长，设计、实现和维护团队 复杂性来源：希望能满足的需求的数量、高利用率 相互影响的需求：不断升级的复杂性、避免过度通用 保证高利用率：收益率递减 处理复杂性：模块化、抽象化、层次化和分级化，用名字关联，间接支持替换 模块化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Notes on Principles of Computer System Design">
+<meta property="og:url" content="http://example.com/2021/01/19/Notes-on-Principles-of-Computer-System-Design/index.html">
+<meta property="og:site_name" content="Benjamin Shen&#39;s Blog">
+<meta property="og:description" content="Chapter 1：Systems系统问题：突生属性、传播效应、扩展不相称和权衡 系统分析：如何划分组件、粒度、系统边界、外部接口 复杂性：组件数量大，互连多，不规则情况多，描述长，设计、实现和维护团队 复杂性来源：希望能满足的需求的数量、高利用率 相互影响的需求：不断升级的复杂性、避免过度通用 保证高利用率：收益率递减 处理复杂性：模块化、抽象化、层次化和分级化，用名字关联，间接支持替换 模块化">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg">
+<meta property="article:published_time" content="2021-01-19T04:16:21.000Z">
+<meta property="article:modified_time" content="2021-01-19T04:22:07.120Z">
+<meta property="article:author" content="Benjamin Shen">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2021/01/19/Notes-on-Principles-of-Computer-System-Design/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+};
+
+var saveToLocal = {
+  set: function setWithExpiry(key, value, ttl) {
+    const now = new Date()
+    const expiryDay = ttl * 86400000
+    const item = {
+      value: value,
+      expiry: now.getTime() + expiryDay,
+    }
+    localStorage.setItem(key, JSON.stringify(item))
+  },
+
+  get: function getWithExpiry(key) {
+    const itemStr = localStorage.getItem(key)
+
+    if (!itemStr) {
+      return undefined
+    }
+    const item = JSON.parse(itemStr)
+    const now = new Date()
+
+    if (now.getTime() > item.expiry) {
+      localStorage.removeItem(key)
+      return undefined
+    }
+    return item.value
+  }
+}
+
+// https://stackoverflow.com/questions/16839698/jquery-getscript-alternative-in-native-javascript
+const getScript = url => new Promise((resolve, reject) => {
+  const script = document.createElement('script')
+  script.src = url
+  script.async = true
+  script.onerror = reject
+  script.onload = script.onreadystatechange = function() {
+    const loadState = this.readyState
+    if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+    script.onload = script.onreadystatechange = null
+    resolve()
+  }
+  document.head.appendChild(script)
+})</script><script id="config_change">var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-01-19 12:22:07'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(function () {  window.activateDarkMode = function () {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+    }
+  }
+  window.activateLightMode = function () {
+    document.documentElement.setAttribute('data-theme', 'light')
+   if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+    }
+  }
+  const autoChangeMode = 'false'
+  const t = saveToLocal.get('theme')
+  if (autoChangeMode === '1') {
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+    const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+    const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+    if (t === undefined) {
+      if (isLightMode) activateLightMode()
+      else if (isDarkMode) activateDarkMode()
+      else if (isNotSpecified || hasNoSupport) {
+        const now = new Date()
+        const hour = now.getHours()
+        const isNight = hour <= 6 || hour >= 18
+        isNight ? activateDarkMode() : activateLightMode()
+      }
+      window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+        if (saveToLocal.get('theme') === undefined) {
+          e.matches ? activateDarkMode() : activateLightMode()
+        }
+      })
+    } else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else if (autoChangeMode === '2') {
+    const now = new Date()
+    const hour = now.getHours()
+    const isNight = hour <= 6 || hour >= 18
+    if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+    else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else {
+    if (t === 'dark') activateDarkMode()
+    else if (t === 'light') activateLightMode()
+  }const asideStatus = saveToLocal.get('aside-status')
+if (asideStatus !== undefined) {
+   if (asideStatus === 'hide') {
+     document.documentElement.classList.add('hide-aside')
+   } else {
+     document.documentElement.classList.remove('hide-aside')
+   }
+}})()</script><meta name="generator" content="Hexo 5.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/null" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg)"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Benjamin Shen's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Notes on Principles of Computer System Design</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-01-19T04:16:21.000Z" title="发表于 2021-01-19 12:16:21">2021-01-19</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-01-19T04:22:07.120Z" title="更新于 2021-01-19 12:22:07">2021-01-19</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="Chapter-1：Systems"><a href="#Chapter-1：Systems" class="headerlink" title="Chapter 1：Systems"></a>Chapter 1：Systems</h1><p>系统问题：突生属性、传播效应、扩展不相称和权衡</p>
+<p>系统分析：如何划分组件、粒度、系统边界、外部接口</p>
+<p>复杂性：组件数量大，互连多，不规则情况多，描述长，设计、实现和维护团队</p>
+<p>复杂性来源：希望能满足的需求的数量、高利用率</p>
+<p>相互影响的需求：不断升级的复杂性、避免过度通用</p>
+<p>保证高利用率：收益率递减</p>
+<p>处理复杂性：模块化、抽象化、层次化和分级化，用名字关联，间接支持替换</p>
+<p>模块化：错误数N，调试时间NxN，分成N个模块(N/K)x(N/K)xK</p>
+<p>抽象化：鲁棒性原则：宽输入，严输出。安全边界原则。</p>
+<p>层次化：模块只和同一层的对等模块或者相邻层次的模块交互</p>
+<p>处理复杂性Ⅱ：迭代法、保持简单</p>
+<h1 id="Chapter-2：Elements-of-Computer-System-Organization"><a href="#Chapter-2：Elements-of-Computer-System-Organization" class="headerlink" title="Chapter 2：Elements of Computer System Organization"></a>Chapter 2：Elements of Computer System Organization</h1><p>三种抽象：存储器、解释器、通信链路，组件通过名字互联支持对象共享，引用交互</p>
+<p>存储器：需要有读写一致性和前后原子性，但有并发性、远程存储、性能提升、存储单元和存储值的大小不相称、存储副本等问题。</p>
+<p>RAID：独立磁盘冗余阵列，一组磁盘和一个控制器，转发读写</p>
+<p>解释器：指令引用（下一条指令的位置）、指令表（指令行为映射）、环境引用（状态）</p>
+<p>处理器：PC记录在寄存器，下一条指令在内存中的位置。环境引用包括内置位置寻址存储器（寄存器形式）、内存。</p>
+<p>命名：组织和通信的工具，名字和对象间存在绑定，是模块化的基础。命名方案包括名字空间、映射算法、值。在命名方案和上下文中解释名字。解析器提供默认上下文，也可以显式提供。名字映射包含查找表、递归查找（不断重复使最低/高有效组件重合）、多重查找（在一组按序查找的上下文中查找）。</p>
+<p>相同标准：修改其中一个，看另一个是否改变。原则：必须可以中止，不能出现回路。</p>
+<p>层次结构在硬件层和软件层中的文件系统被典型运用。</p>
+<p>总线：如LOAD 1742,R1，处理器向总线发出processor #2 {1742,READ,102}，第一块内存响应1742，将消息复制自己的寄存器、读取、请求占用总线，将结果返回给第二个处理器memory #1 {102,value}，处理器2复制数据到自身寄存器R1，发出确认信号。也可以将总线地址直接指定到模块的控制寄存器或缓冲区上，称为内存映射I/O。总线地址映射到寄存器，寄存器中存入实际地址。</p>
+<p>文件抽象：持久性+有名字。</p>
+<ul>
+<li>块层：最小单位，块号映射到块。超级块1记录位图，记录磁盘块使用情况。inode表记录文件对应inode</li>
+<li>文件层：inode记录文件元数据多个块号数组+大小，可以通过偏移字节数目/块大小，再寻找文件的第index块来获取块</li>
+<li>inode编号层：inode号索引在inode表中。值是inode</li>
+<li>文件名层：隐藏文件管理的元数据，目录是将字符串和名字和inode号绑定的上下文。</li>
+<li>路径名层：递归查询，inode号在工作目录中。</li>
+<li>绝对路径名层：inode=1是根目录的inode号，inode号在根目录中。</li>
+<li>符号连接层：LINK，在不同上下文中将不同文件名映射到相同的inode号。refcnt记录inode被各种文件名引用的计数。软连接将名字绑定到相同名字空间的另一名字，硬连接将名字绑定到低层名字空间的名字。路径名在目录结构中。</li>
+</ul>
+<p>重命名：LINK(from_name,to_name),UNLINK(from_name)</p>
+<p>例子中，pong.c的程序块查找，首先确定超级块中的inode表（块4中），根目录inode为1。4，5，6块是inode表，inode比块小，此处是4:1，根目录是14，37，16组成。文件名映射inode，inode维护实际块号。</p>
+<p>文件系统API：OPEN返回fd，0标准输入，1标准输出，2标准错误。多进程共享读写游标。文件系统在全局维护文件打开表（包含打开未关闭的文件信息），进程维护文件描述表（包含fd在file_table中的索引）。</p>
+<h1 id="Chapter-3：The-Design-of-Naming-Schemes"><a href="#Chapter-3：The-Design-of-Naming-Schemes" class="headerlink" title="Chapter 3：The Design of Naming Schemes"></a>Chapter 3：The Design of Naming Schemes</h1><p>命名需要考虑工程性设计因素。</p>
+<p>模块化共享：解决办法有：在冲突上下文中为其它增加绑定，并把明确的上下文引用连接到每个模块，带有圆圈的是上下文引用，告诉解释器哪个上下文用于该模块中发现的名字；增强程序解释器以记录最初发现每组程序的上下文。即对外部的引用绑定到其它上下文中的名字，而不是过程。优雅的方式是将对象名关联到包含上下文和对象的结构体(闭包)。</p>
+<p>元数据和名字重载：名字携带元数据，能够作为标识符，也能作为提取元数据的源。重载即代表它为定位提供有效信息。</p>
+<p>地址：作为标识符，可以被命名操作/定位器，改变时可以修改所有旧地址/进行基于属性的对象搜索/增加绑定（有同义词或间接名）/放置活动中间人。最好将地址隐藏在间接层后。</p>
+<p>生成不重复名字：足够大的空间+高品质随机数；对象内容+哈希。也可以利用代表性建立分层的命名方案，针对有限命名空间，常常使用分配。</p>
+<p>URL：协议+DNS解析部分+给服务器的剩余部分。当不带有上下文，使用缺省上下文。混淆：连接情况下使用同一个相对、UNIX和Web对..的不同解释，三种方法：让默认上下文引用总是工作、自己选择上下文、提供明确上下文引用。名字重载的好方案是利用服务绑定到站点作为间接名。</p>
+<h1 id="Chapter-4：Enforcing-Modularity-with-Clients-and-Services"><a href="#Chapter-4：Enforcing-Modularity-with-Clients-and-Services" class="headerlink" title="Chapter 4：Enforcing Modularity with Clients and Services"></a>Chapter 4：Enforcing Modularity with Clients and Services</h1><p>客户/服务组织，用消息交互，强制模块之间的模块化。如不分隔，可能存在调用者破坏栈、返回位置错误、寄存器保存错误、没有恢复、同命运、改错全局变量。使用C/S架构后，不依赖共享状态、事务疏远、客户端保护自己、接口清晰明确。</p>
+<p>可信中间方：有着多个客户端的单个服务器端，推送/拉取，实现解耦合，考虑何时何地复制消息。</p>
+<p>发送/接收消息：RPC：Stub隐藏装配消息和通信细节，Java能生成Stub。可能有没有响应情况，三种策略：“至少一次”，无响应就重复，操作需要幂等，一定次数后放弃；“至多一次”，没有响应就返回报错；“恰好一次”，额外的消息交换的复杂性和小心点保存记录，询问之前无响应的。缺点有开销大，无法结合特点；发布/订阅</p>
+<p>DNS：关联字符串和IP地址，使用分布式目录服务模型，每个服务器解析所有域名的一些子集，有一个协议能来寻找一个能够解析某一特定域名的服务器。能提供代理。</p>
+<p>NFS：文件句柄类似于inode号，无状态，每次远程过程调用都包含执行该请求的所需的全部信息。</p>
+<h1 id="Chapter-5：Enforcing-Modularity-with-Virtualization"><a href="#Chapter-5：Enforcing-Modularity-with-Virtualization" class="headerlink" title="Chapter 5：Enforcing Modularity with Virtualization"></a>Chapter 5：Enforcing Modularity with Virtualization</h1><p>虚拟化-模块化，有界缓存区的发送接收-通信链，虚拟内存-内存，线程-处理器。</p>
+<p>复用(虚拟线路)、聚合(RAID) 、仿真(内存磁盘、虚拟PC)实现虚拟化。</p>
+<p>线程：包含程序计数器和环境引用（堆、栈、对象），启动时装载指令和数据，并分配栈、设置SP指针到栈顶、设置PC到起始地址</p>
+<p>虚拟内存：每个模块有自己的虚拟地址空间，由多个线程共享</p>
+<p>有界缓存顺序合作：线程等待循环：自旋循环，多个假设。当多发送者与多接收者：产生竞态条件，</p>
+<p>锁：ACQUIRE，RELEASE，必须都遵循守则(修改共享变量前必须先获得锁)，</p>
+<p>死锁：画有向图等待图，获得了锁就新增锁到线程的边，等待线程就画线程到锁的边，当且仅当有一个环，则产生死锁。需要按相同的顺序来获得锁。单个锁也可能产生死锁(发送者接收者)。</p>
+<p>ACQUIRE和RELEASE：它们本身就应该是一个原子性动作，RSM（传入引用，返回引用的值并将它锁住）\TAS是系统提供的原子性动作实现方式，do atomic中的读取和赋值在一个时钟周期实现。ACQUIRE：RSM(L.state)，如果LOCKED则自旋等待（再次RSM(L.state)），直到UNLOCKED，成功获得</p>
+<p>单一写原理实现前后原子性：保证只有一个线程会去修改L</p>
+<p>异步连接在同步岛之间进行合作：部件时间同步、多级方式设计仲裁器、将时钟/组件变成异步的。</p>
+<p>域和内存管理器强制内存模块化：每一个处理器有域寄存器和内存管理器，进行内存访问时，内存管理器检查所有域寄存器，如果有符合条件的，则发出所需的总线请求。在线程加入额外的两个域（内存管理器、域表），Kernal-Only。</p>
+<p>YIELD:主动让出处理器</p>
+<p>顺序合作:wait:作用是挂起当前线程,释放获取到的锁,直到别的线程调用了这个对象的notify或notifyAll方法.notify:作用是唤醒因调用wait挂起的线程,如果有多个线程,随机唤醒一个.需要将1)测试共享缓存是否有空间.2)睡眠等待位置.3)释放共享锁使其它线程能产生空间.这三步为原子性动作</p>
+<p>————</p>
+<p>in是被放入buffer的消息数，out是从buffer拿出的消息数.当前一个状态是临界状态,则有必要通知并修改.</p>
+<p>await(eventcount,value):eventcount大于value时,返回调用者,否则设置线程waiting并yield处理器.advance(eventcount):增加eventcount多1,遍历等待eventcount的线程,如果超过了value,则转waiting为runnable</p>
+<p>概括一下读写者问题:当缓存已满/没有消息,自旋等待,跳出后做实际操作,并为in/out++,多写者情况:</p>
+<p>用锁:先获得锁,自旋等待是释放/获取锁的循环(给读者机会),实际操作后释放锁.</p>
+<p>用yield:先获得锁,判断是否满的循环,如果满则释放锁(给读者机会),yield()(让出处理器,等待回来),acquire(从yield回来,可能有了空间,获取锁看看).</p>
+<p>用wait和notify:发送时,如果满了,则release后wait p.room这个有空间事件,发送实际操作后判断in == out是否成立,是则notify notempty(这说明原来的情况是为空,有线程在等待非空事件)</p>
+<p>用await和advance:发送时await(p.out,p.in-N),收时await(p.in,p.out),自增用advance代替</p>
+<p>semaphores:不需要忙等待,是整型变量.wait(S)是原子操作,在S&lt;=0时忙等待,跳出后S–并结束.signal(S)是S++.初始化mutex=1,在进入关键区前wait(mutex),执行完后signal(mutex).初始化flag=0可以用作保证前后执行</p>
+<p>将semaphore定义为记录:结构内加入process记录被阻塞的进程队列,block操作挂起invoke它的进程,wakeup(P)唤醒阻塞的进程P.这样就要更改wait:先S.value–,如果小于0,将进程加入S.L,阻塞.更改signal:S.value++,如果小于等于0,则从S.L中移除P,wakeup(P).</p>
+<p>同步的三个经典问题:</p>
+<p>有界缓存问题:fill=0,empty=n,mutex=1</p>
+<p>读写者问题:mutex=1,wrt=1,readcount=0.写者简单地wait(wrt),写,signal(wrt)</p>
+<p>哲学家吃饭问题:</p>
+<h2 id="Operating-System"><a href="#Operating-System" class="headerlink" title="Operating System"></a>Operating System</h2><p>进程间通信：管道、有名管道(存储中)、信号、消息队列(内核中，可按类别读取)、信号量(计数器)、共享内存、套接字</p>
+<p>线程间同步：互斥量(Mutex，拥有一互斥对象才能访问)，信号量(控制最大线程数量)，事件(Wait/Notify，通知操作)</p>
+<p>进程调度算法：<strong>先到先服务(FCFS)调度算法</strong> : 执行就绪队列最新的，到完成或发生某事件而被阻塞放弃占用 CPU 时再重新调度。<strong>短作业优先(SJF)的调度算法</strong> :执行估计运行时间最短的进程，到完成或发生某事件而被阻塞放弃占用 CPU 时再重新调度。<strong>时间片轮转调度算法</strong> : 古老，简单，公平且使用最广的算法，又称 RR(Round robin)调度。每个进程被分配一个时间段，称作它的时间片，即该进程允许运行的时间。<strong>多级反馈队列调度算法</strong> ：既能使高优先级的作业得到响应又能使短作业（进程）迅速完成。UNIX 操作系统采取的便是这种调度算法，克服局限性。<strong>优先级调度</strong> ： 为每个流程分配优先级，首先执行具有最高优先级的进程，依此类推。具有相同优先级的进程以 FCFS 方式执行。可以根据内存要求，时间要求或任何其他资源要求来确定优先级。</p>
+<p>内存管理机制：<strong>连续分配管理方式</strong>和<strong>非连续分配管理方式</strong></p>
+<p><strong>块式管理</strong> ： 将内存分为几个固定大小的块，每个块中只包含一个进程。如果程序运行需要内存的话，操作系统就分配给它一块，如果程序运行只需要很小的空间的话，分配的这块内存很大一部分几乎被浪费了。这些在每个块中未被利用的空间，我们称之为碎片。</p>
+<p>非连续如<strong>页式管理</strong> ：把主存分为大小相等且固定的一页一页的形式，页较小，相对相比于块式管理的划分力度更大，提高了内存利用率，减少了碎片。页式管理通过页表对应逻辑地址和物理地址。仅仅满足内存管理需要，大小系统决定。</p>
+<p><strong>段式管理</strong> ： 页式管理虽然提高了内存利用率，但是页式管理其中的页实际并无任何实际意义。 段式管理把主存分为一段段的，每一段的空间又要比一页的空间小很多 。但是，最重要的是段是有实际意义的，每个段定义了一组逻辑信息，例如,有主程序段 MAIN、子程序段 X、数据段 D 及栈段 S 等。 段式管理通过段表对应逻辑地址和物理地址。大小不固定，是逻辑信息的单位</p>
+<p><strong>段页式管理机制</strong>结合了段式管理和页式管理的优点。简单来说段页式管理机制就是把主存先分成若干段，每个段又分成若干页，也就是说 <strong>段页式管理机制</strong> 中段与段之间以及段的内部的都是离散的。</p>
+<p>分页内存管理：虚拟地址到物理地址的转换要快，解决虚拟地址空间大，页表也会很大的问题。</p>
+<p>为了解决虚拟地址到物理地址的转换速度，操作系统在 <strong>页表方案</strong> 基础之上引入了 <strong>快表</strong> 来加速虚拟地址到物理地址的转换。一种特殊的高速缓冲存储器（Cache），是页表的一部分或者全部内容。由于采用页表做地址转换，读写内存数据时 CPU 要访问两次主存。有了快表，有时只要访问一次高速缓冲存储器，一次主存。</p>
+<p>引入<strong>多级页表</strong>的主要目的是为了避免把全部页表一直放在内存中占用过多空间，特别是那些根本就不需要的页表就不需要保留在内存中。多级页表属于时间换空间的典型场景</p>
+<p>CPU寻址：现代处理器使用的是一种称为 <strong>虚拟寻址(Virtual Addressing)</strong> 的寻址方式。<strong>使用虚拟寻址，CPU 需要将虚拟地址翻译成物理地址，这样才能访问到真实的物理内存。</strong> 实际上完成虚拟地址转换为物理地址转换的硬件是 CPU 中含有一个被称为 <strong>内存管理单元（Memory Management Unit, MMU）</strong> 的硬件。MMU与TLB（Translation lookaside buffer）交互。</p>
+<p><strong>虚拟内存</strong> ：使得应用程序认为它拥有连续的可用的内存（一个连续完整的地址空间），而实际上，它通常是被分隔成多个物理内存碎片，还有部分暂时存储在外部磁盘存储器上，在需要时进行数据交换。实现方式建立在离散分配的内存管理方式的基础上，</p>
+<p>虚拟存储器：装载部分程序进内存，时间换空间，需要时访问。请求存储管理都可以先只装载当前需要运行的一部分到内存，之后有需要时再请求（置换算法），提供虚存。</p>
+<p>页面置换：当缺页中断，需要淘汰内存中某一页面，有多种算法：<strong>OPT 页面置换算法（最佳页面置换算法）</strong> ：最佳(Optimal, OPT)置换算法所选择的被淘汰页面将是以后永不使用的，或者是在最长时间内不再被访问的页面,这样可以保证获得最低的缺页率。一般作为衡量其他置换算法的方法。<strong>FIFO（First In First Out） 页面置换算法（先进先出页面置换算法）</strong> : 总是淘汰最先进入内存的页面，即选择在内存中驻留时间最久的页面进行淘汰。<strong>LRU （Least Currently Used）页面置换算法（最近最久未使用页面置换算法）</strong> ：LRU算法赋予每个页面一个访问字段，用来记录一个页面自上次被访问以来所经历的时间 T，当须淘汰一个页面时，选择现有页面中其 T 值最大的，即最近最久未使用的页面予以淘汰。<strong>LFU （Least Frequently Used）页面置换算法（最少使用页面置换算法）</strong> :  该置换算法选择在之前时期使用最少的页面作为淘汰页。</p>
+<p>时间局部性（间隔时间后又访问）、空间局部性（连续的存储单元）。</p>
+<p>让临界区代码互斥，在进入临界区之前，用if检查一个bool值，条件不满足就<strong>“忙等”</strong>。这叫<strong>“锁变量”</strong>。一般“检查-占锁”这个动作不具备<strong>“原子性”</strong>，除非使用<strong>“TSL指令”</strong>。或者使用<strong>“自旋锁”</strong>，但它的缺点是不满足时会<strong>“忙等待”</strong>，需要后台调度器重新分配时间片，效率低。解决忙等待问题的是：“<strong>sleep”</strong>和“<strong>wakeup”</strong>两个原语。sleep阻塞当前线程的同时会让出它占用的锁。wakeup可以唤醒在目标锁上睡眠的线程。这样的锁叫<strong>“互斥量”</strong>，推广到”N”的空间叫<strong>“信号量”</strong>，依赖TSL指令。<strong>“管程”</strong>的特性，从编译器的层面保证了临界区的互斥，比如Java的synchronized关键字。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">pthread_mutex_lock:</span><br><span class="line">atomic_dec(pthread_mutex_t.value);</span><br><span class="line">if(pthread_mutex_t.value!&#x3D;0)</span><br><span class="line">futex(WAIT)</span><br><span class="line">else</span><br><span class="line">success</span><br><span class="line"></span><br><span class="line">pthread_mutex_unlock:</span><br><span class="line">atomic_inc(pthread_mutex_t.value);</span><br><span class="line">if(pthread_mutex_t.value!&#x3D;1)</span><br><span class="line">   futex(WAKEUP)</span><br><span class="line">else</span><br><span class="line">success</span><br></pre></td></tr></table></figure>
+<h1 id="Chapter-6：Performance"><a href="#Chapter-6：Performance" class="headerlink" title="Chapter 6：Performance"></a>Chapter 6：Performance</h1><h2 id="Designing-for-Performance"><a href="#Designing-for-Performance" class="headerlink" title="Designing for Performance"></a>Designing for Performance</h2><p>吞吐率=1/延迟</p>
+<p>工作负载：为频繁请求提供快路径，尽管其它请求可能更慢；并发性：瓶颈复制成n个，吞吐率提高n倍；排队与过载：p是服务利用率，平均排队时间1/(1-p)，增加容量或限制负载，可以引入缓存、禁止新请求、交换等。</p>
+<p>批处理：消除固定延迟；延迟处理：等待批处理或者吸收；推测执行：请求到来前就执行它</p>
+<p>平均寻道8ms,转速7200,每圈8.33ms,平均旋转延迟4.17ms,磁头在硬盘旋转中读,传到缓冲区,总线传到计算机.400GB硬盘有16383个柱面,每个柱面24MB,8个双面盘片(16个读写磁头),每个磁道1.5MB数据,每个磁头每秒120x1.5=180MB数据,IDE总线66MB/s,SATA3是3GB,随机读取4KB需8+4.17+(4/(180x1024))x1000ms,随机吞吐率是1000/12.19x4KB/s,如果读计算写则是12.19+1+12.19,如果数据连续摆放且预取整个磁道,则读取完整磁道的时间8+8.33ms,消除了旋转延迟,384次循环读取一次磁道,变成16.33+384x(1+12.19),再优化建议cache,384次变成16.33+384+16.33.还可以在已处理本一半时预取下一个</p>
+<p>使用较低层次名字空间是cache，否则是虚存。时间局部性：同一地址，空间局部性：相近地址</p>
+<h2 id="Multilevel-Memories"><a href="#Multilevel-Memories" class="headerlink" title="Multilevel Memories"></a>Multilevel Memories</h2><p>多层存储：FIFO在主存内加载了最久被替换,Belady(主存变大,miss反而变多),OPT（寻找那些在最长时间内都不会被换出的页面）,LRU主存内被用到隔最久被替换</p>
+<p>时钟页面替换算法：所有页面组成环，有访问位；初始全False,当需要替换,如果指向True,则将它置为False,到下一项;如果False,就将它换出,保留指针.如果没有F,重新到0则一定是F.</p>
+<p>按需调页,预取:推测，交换</p>
+<h2 id="Scheduling"><a href="#Scheduling" class="headerlink" title="Scheduling"></a>Scheduling</h2><p>线程有一系列作业(运行状态):FCFS先到先服务,短作业优先:长作业饥饿,轮转策略:长作业分解,可抢占式,时间片消耗完中断yield,控制权交给调度器并移动它到最后,等待时间最短;优先级调度:分发器选择最高优先级执行,解决优先级反转:获取锁被阻塞时,应该将优先级临时借给锁持有者.</p>
+<h1 id="Chapter-8：Fault-Tolerance"><a href="#Chapter-8：Fault-Tolerance" class="headerlink" title="Chapter 8：Fault Tolerance"></a>Chapter 8：Fault Tolerance</h1><p>需要有错误发现、阻止、掩盖修正的能力</p>
+<h2 id="Fault-Failures-and-Fault-Tolerant-Design"><a href="#Fault-Failures-and-Fault-Tolerant-Design" class="headerlink" title="Fault,Failures,and Fault Tolerant Design"></a>Fault,Failures,and Fault Tolerant Design</h2><p>掩盖、报告、马上停止</p>
+<p>soft error：重试可能不再看见</p>
+<p>构建模型，它需要识别错误、预估风险、防御，分层保护，设计遮掩（重试、替代），日志</p>
+<h2 id="Measures-of-Reliability-and-Failure-Tolerance"><a href="#Measures-of-Reliability-and-Failure-Tolerance" class="headerlink" title="Measures of Reliability and Failure Tolerance"></a>Measures of Reliability and Failure Tolerance</h2><p>TTF：Time to failure，TTR：Time to repair，称每个工作-失败-修复过程作为一个循环。前面加M，表示平均。</p>
+<p>availability:(所有TTF求和)/(所有TTF+TTR求和)，MTBF=meantime between failure=MTTF+MTTR</p>
+<p>down time=1 - availability，不工作的指数，停机时间</p>
+<p>当故障部件坏掉时丢弃，则将N个同时测试，全部坏掉的时间作为TTFi的集合</p>
+<p>在刚使用和将达到寿命时，故障率最高</p>
+<p>可靠度R(t)为系统在t时间仍然没有失效的概率，失效函数f(t)是t和t+dt间失效的概率，MTTF是t乘以f(t)在无限时间上的积分，当失效率是常值函数，R(t)是e的负(t/MTTF)次方，称为无记忆性，这时失效函数率是MTTF的倒数。</p>
+<h2 id="Tolerating-Active-Faults"><a href="#Tolerating-Active-Faults" class="headerlink" title="Tolerating Active Faults"></a>Tolerating Active Faults</h2><p>对于常常发生的错误，什么都不做，或迅速移交处理，或选择一定安全策略，或包容错误，或掩盖错误</p>
+<h2 id="Systematically-Applying-Redundancy"><a href="#Systematically-Applying-Redundancy" class="headerlink" title="Systematically Applying Redundancy"></a>Systematically Applying Redundancy</h2><p>在编码时增量冗余：要将一个合法模式转换成另一个模式，必须改变的大于1最小比特数，称为这两个模式之间的Hamming Distance。当hd为2，则可以识别错误，不知道原来的。当hd为3，可以识别原来的（1位错误发生）。d位hd侦测d-1位错误，纠正(d-1)/2位错误。</p>
+<p>副本大量冗余：多余的盘存放各值异或，插入新值时，异或盘上更新方式是：原异或值 异或 更新前旧值 异或 更新到的值</p>
+<p>投票：N-modular redundancy，NMR，supermodule。大多数副本需要通过，当每个模块可靠性是R，总可靠性是R的三次+三倍R的二次乘以1-R，代表全可靠或有一个不可靠。递归投票者是下一个模块的组件。实际上这样的方法可能不利于MTTF，比如单个6000，而三个变成2000+3000（坏掉两个）。是牺牲长期可靠性换取短期的。用N个副本，则MTTF整个系统是1+1/2+1/3+……+1/N倍，无限堆叠后到lnN</p>
+<p>修复：当有两个工作，一个可以支撑，则失效概率是(2xMTTR)/MTTF，在三个副本坏掉两个不能用的情况下，总MTTF是(单个MTTF/3)x(单个MTTF/(2*MTTR))</p>
+<p>fail-vote:当正确数低于一半，就不能工作</p>
+<p>purging:需要支撑数第二少，检测到和多数不一致，要求修复它，标记它，忽略它，直到它被修复，当还有任两个正确，就能工作</p>
+<p>fail-fast:需要支撑数最少，每个副本内部pair-and-compare，就算只剩最后一个也能运行</p>
+<h1 id="Chapter-9：Atomicity"><a href="#Chapter-9：Atomicity" class="headerlink" title="Chapter 9：Atomicity"></a>Chapter 9：Atomicity</h1><p><strong>all-or-nothing atomicity</strong></p>
+<p>模块化的强形式，多个步骤像一个步骤</p>
+<p>在描述系统的可能状态时，很少并行活动在实际执行时可能有多种顺序，原子性为从故障中恢复和协调并发活动的方法提供了基础</p>
+<p>数据库：转账</p>
+<p>completed（整个动作序列被完成），aborted（无法完成整个序列，抛弃已做的，像什么都没做过）</p>
+<p><strong>before-or-after atomicity</strong></p>
+<p>两个动作，要么一个完全在另一个之前，要么之后</p>
+<p>例如修改一个变量，如果两个修改动作的READ,WRITE混淆，则结果错误</p>
+<p>具体来说，系统中对一个数据的读和写虽然包含多个子步骤并且会持续一段时间才能执行完，但是在调用者看来，读操作和写操作都必须是单个的即时完成的操作，不存在重叠。对一个写操作，如果系统返回了成功，那么之后到达的读请求都必须读到这个新的数据；如果系统返回失败，那么所有的读，无论是之后发起的，还是和写同时发起的，都不能读到这个数据。</p>
+<p>可容忍：用户可以意识到动作失败，系统检查一个动作到底做了没有</p>
+<p>不可容忍：用户不知情情况下，动作失败；用户不知道需要重做</p>
+<p>假设只出错一次</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">procedure ALMOST_ALL_OR_NOTHING_PUT (data, all_or_nothing_sector)</span><br><span class="line">	CAREFUL_PUT(data, all_or_nothing_sector.S1)</span><br><span class="line"> 	CAREFUL_PUT (data, all_or_nothing_sector.S2)	&#x2F;&#x2F;commit point</span><br><span class="line"> 	CAREFUL_PUT (data, all_or_nothing_sector.S3)</span><br></pre></td></tr></table></figure>
+<p><strong>ALL_OR_NOTHING_GET</strong></p>
+<p>data1 = data2，要么都是旧的，要么都是新的</p>
+<p>data1不等于data2，因为不会是new old bad（old之后都应该是old），所以直接取3，取1、2可能遇到bad</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">procedure ALL_OR_NOTHING_GET (reference date,all_or_nothing_sector)</span><br><span class="line"> 	CAREFUL_GET (data1, all_or_nothing_sector.S1)</span><br><span class="line"> 	CAREFUL_GET (data2, all_or_nothing_sector.S2)</span><br><span class="line"> 	CAREFUL_GET (data3, all_or_nothing_sector.S3)</span><br><span class="line"> 	if (data1 &#x3D; data2)    data ← data1</span><br><span class="line"> 	else  data ← data3</span><br></pre></td></tr></table></figure>
+<p><strong>ALL_OR_NOTHING_PUT</strong></p>
+<p>先检查，再使用粗略PUT</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">procedure ALL_OR_NOTHING_PUT (data, all_or_nothing_sector)</span><br><span class="line"> 	CHECK_AND_REPAIR (all_or_nothing_sector)</span><br><span class="line"> 	ALMOST_ALL_OR_NOTHING_PUT (data, all_or_nothing_sector)</span><br></pre></td></tr></table></figure>
+<p><strong>CHECK_AND_REPAIR</strong></p>
+<p>将三个区域全都刷成old，或new，可以恢复之前错写</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">procedure CHECK_AND_REPAIR (all_or_nothing_sector)				                             &#x2F;&#x2F; Ensure copies match</span><br><span class="line"> 	CAREFUL_GET (data1, all_or_nothing_sector.S1)</span><br><span class="line"> 	CAREFUL_GET (data2, all_or_nothing_sector.S2)</span><br><span class="line"> 	CAREFUL_GET (data3, all_or_nothing_sector.S3)</span><br><span class="line"> 	if (data1 &#x3D; data2) and (data2 &#x3D; data3) return	&#x2F;&#x2F; State 1 or 7, no repair</span><br><span class="line">if (data1 &#x3D; data2)</span><br><span class="line">    CAREFUL_PUT (data1, all_or_nothing_sector.S3) return  &#x2F;&#x2F; State 5 or 6.</span><br><span class="line">if (data2 &#x3D; data3)</span><br><span class="line">    CAREFUL_PUT (data2, all_or_nothing_sector.S1) return  &#x2F;&#x2F; State 2 or 3.</span><br><span class="line">CAREFUL_PUT (data1, all_or_nothing_sector.S2) &#x2F;&#x2F; State 4, go to state 5</span><br><span class="line">CAREFUL_PUT (data1, all_or_nothing_sector.S3  &#x2F;&#x2F; State 5, go to state 7</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th>state</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td>old</td>
+<td>bad</td>
+<td>new</td>
+<td>new</td>
+<td>new</td>
+<td>new</td>
+<td>new</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>old</td>
+<td>old</td>
+<td>old</td>
+<td>bad</td>
+<td>new</td>
+<td>new</td>
+<td>new</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>old</td>
+<td>old</td>
+<td>old</td>
+<td>old</td>
+<td>old</td>
+<td>bad</td>
+<td>new</td>
+</tr>
+</tbody></table>
+<p><strong>commit</strong></p>
+<p>在all-or-nothing操作中，有一个提交点，提交点前的操作，都应该是能够不留痕迹地后退的；提交点后的操作，都应是可以确保操作的完成是不可避免的结果的。</p>
+<p><strong>pre-commit</strong></p>
+<p>指示完成动作的所有资源，建立它们的可用性，保留随时中止的能力</p>
+<p>一旦共享资源被保留，它在通过提交点之前就不该被释放</p>
+<p>不应做任何外部可见行为</p>
+<p><strong>post-commit</strong></p>
+<p>释放不再需要的共享资源</p>
+<p>执行外部可见行为</p>
+<p>无法尝试获取其它资源</p>
+<p><strong>Shadow Copy</strong></p>
+<p>Pre-commit:</p>
+<p>制作完全一致的重复工作副本，更改它</p>
+<p>Commit point: </p>
+<p>自举地、仔细地交换工作副本和原来的文件</p>
+<p>Post-commit:</p>
+<p>释放被源文件占用的资源</p>
+<p><strong>黄金准则</strong>：如果只有一个副本，那么就不要直接修改这个单一的副本</p>
+<p><strong>Version Histories</strong></p>
+<p>只有一个线程运行，重启后，原来的线程不存在了。</p>
+<p>目标是新线程应该始终发现在崩溃时正在进行的“全有或全无”操作要么从未启动或成功完成。</p>
+<p>日志存储的基本思想很简单：我们将每个命名变量与非易失性存储中的单元列表（而不是单个单元）相关联；列表中的值表示变量的历史记录</p>
+<p>日志存储管理器在NEW_ACTION调用时，应该为预期的all or nothing操作分配一个nonce标识符，并在非易失性单元存储中创建这个新标识符的记录和新的all or nothing操作的状态。这个记录被称为结果记录；它从PENDING状态开始存在；根据结果，它最终应该移动到COMMITTED或ABORTED状态之一，如图9.12所示。除了放弃一次结果记录外，其他状态转换是不可能的</p>
+<p><img src="/2021/01/19/Notes-on-Principles-of-Computer-System-Design/Programming\myBlog\hexo\source_posts\Notes-on-Principles-of-Computer-System-Design\JS.png" alt="JS"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">procedure NEW_ACTION ()</span><br><span class="line"> 	id ← NEW_OUTCOME_RECORD () &#x2F;&#x2F;为提交记录取新id</span><br><span class="line"> 	id.outcome_record.state ← PENDING &#x2F;&#x2F;找到id对应的副本空间，修改其状态为pending</span><br><span class="line"> 	return id</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">procedure COMMIT (reference id)</span><br><span class="line"> 	id.outcome_record.state ← COMMITTED</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">procedure ABORT (reference id)</span><br><span class="line"> 	id.outcome_record.state ← ABORTED</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">procedure READ_CURRENT_VALUE (data_id, caller_id)</span><br><span class="line">   starting at end of data_id repeat until beginning</span><br><span class="line"> 	v ← previous version of data_id   &#x2F;&#x2F; Get next older version</span><br><span class="line"> 	a ← v.action_id           &#x2F;&#x2F; Identify the action a that created it</span><br><span class="line"> 	s ← a.outcome_record.state   &#x2F;&#x2F; Check action a’s outcome record</span><br><span class="line"> 	if s &#x3D; COMMITTED then</span><br><span class="line"> 		return v.value</span><br><span class="line"> 	else skip v                                &#x2F;&#x2F; 表明变量还没被写过Continue backward search</span><br><span class="line">   signal (“Tried to read an uninitialized variable!”)</span><br><span class="line">   &#x2F;&#x2F;这里传入的caller_id实际上是内部检查，确保有个事务是在进行read，防止一些非法的调用。</span><br></pre></td></tr></table></figure>
+<p><img src="/2021/01/19/Notes-on-Principles-of-Computer-System-Design/Programming\myBlog\hexo\source_posts\Notes-on-Principles-of-Computer-System-Design\93.png" alt="93"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">procedure WRITE_NEW_VALUE (reference data_id, new_value, caller_id)</span><br><span class="line"> 	if caller_id.outcome_record.state &#x3D; PENDING</span><br><span class="line"> 		append new version v to data_id</span><br><span class="line"> 		v.value ← new_value</span><br><span class="line">		v.action_id ← caller_id</span><br><span class="line"> 	else signal (“Tried to write outside of an all-or-nothing action!”)</span><br><span class="line"> 	&#x2F;&#x2F;11行表示这个caller_id事务处于pending状态，而不是说有数据处于pending状态此时就可以增加新的数据</span><br></pre></td></tr></table></figure>
+<p><strong>转账</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">procedure TRANSFER (reference debit_account,   reference credit_account, amount)</span><br><span class="line"> 	my_id ← NEW_ACTION ()&#x2F;&#x2F;给个事务id号</span><br><span class="line">	xvalue ← READ_CURRENT_VALUE (debit_account,  my_id)</span><br><span class="line"> 	xvalue ← xvalue - amount</span><br><span class="line">	WRITE_NEW_VALUE (debit_account,   xvalue,   my_id)</span><br><span class="line">	yvalue ← READ_CURRENT_VALUE (credit_account,    my_id)</span><br><span class="line">	yvalue ← yvalue + amount</span><br><span class="line"> 	WRITE_NEW_VALUE (credit_account, yvalue, my_id)</span><br><span class="line"> 	if xvalue &gt; 0 then</span><br><span class="line"> 		COMMIT (my_id)</span><br><span class="line"> 	else</span><br><span class="line"> 		ABORT (my_id)</span><br><span class="line">	             signal (“Negative transfers are not allowed.”)</span><br></pre></td></tr></table></figure>
+<p><strong>Log</strong></p>
+<p>先在日志记录变化，再在存储实施改变</p>
+<p>将数据的读写与故障恢复机制分开</p>
+<p>尽可能减少最常见活动（阅读，更新）所需的存储访问次数</p>
+<p>很少执行的活动可能不是最小的（故障恢复）</p>
+<p><img src="/2021/01/19/Notes-on-Principles-of-Computer-System-Design/Programming\myBlog\hexo\source_posts\Notes-on-Principles-of-Computer-System-Design\log1.png" alt="log1"></p>
+<p><strong>日志协议</strong></p>
+<p>Redo和undo都写在log里面</p>
+<p>CHANGE记录，有两种原子操作身份：</p>
+<ol>
+<li><p>redo (redo value-新值)</p>
+<p>在存储中放入新值，在提交后，如果系统崩溃，恢复步骤可以代表这个操作放入</p>
+</li>
+<li><p>undo (undo value-旧值)</p>
+<p>反转置值对存储单元的影响</p>
+<p>在aborts或系统崩溃，必须让恢复步骤来反转影响（回滚）</p>
+</li>
+</ol>
+<p><strong>转账实例</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">procedure TRANSFER (debit_account, credit_account, amount)</span><br><span class="line"> 	my_id ← LOG (BEGIN_TRANSACTION)</span><br><span class="line"> 	dbvalue.old ← GET (debit_account)</span><br><span class="line"> 	dbvalue.new ← dbvalue.old - amount &#x2F;&#x2F;转账者扣余额</span><br><span class="line"> 	crvalue.old ← GET (credit_account, my_id)</span><br><span class="line"> 	crvalue.new ← crvalue.old + amount &#x2F;&#x2F;被转账者加余额</span><br><span class="line"> 	LOG (CHANGE, my_id,</span><br><span class="line"> 		“PUT (debit_account, dbvalue.new)”, &#x2F;&#x2F;redo action</span><br><span class="line"> 		“PUT (debit_account, dbvalue.old)”) &#x2F;&#x2F;undo action</span><br><span class="line">    LOG (CHANGE, my_id,</span><br><span class="line"> 	    “PUT (credit_account, crvalue.new)”  &#x2F;&#x2F;redo action</span><br><span class="line"> 		“PUT (credit_account, crvalue.old)”) &#x2F;&#x2F;undo action</span><br><span class="line"></span><br><span class="line"> 	if dbvalue.new &gt; 0 then</span><br><span class="line"> 		LOG (OUTCOME, COMMIT, my_id)</span><br><span class="line"> 		&lt;!--在这里崩掉，则需要重启后检查数据库，log中有commited但没有end，数据可能没被更新到数据库，需要redo--&gt;</span><br><span class="line"> 		PUT (debit_account, dbvalue.new) &#x2F;&#x2F; install</span><br><span class="line"> 		PUT (credit_account, crvalue.new) &#x2F;&#x2F; install</span><br><span class="line"> 	else</span><br><span class="line"> 		LOG (OUTCOME, ABORT, my_id)</span><br><span class="line">	 	signal(“Action not allowed. Would make debit account negative.”)</span><br><span class="line"> 	LOG (END_TRANSACTION, my_id)</span><br></pre></td></tr></table></figure>
+<p>数据库管理应用程序（如航空公司预订系统或银行系统）通常需要高性能以及全或无原子性，因此它们的设计者使用流水线型原子性技术。这些技术中最重要的是将数据的读写与故障恢复机制分离开来。</p>
+<p>思想是最小化最常见活动（应用程序读取和更新）所需的存储访问次数。取舍的是，很少执行的活动（故障恢复，人们希望实际上只是偶尔执行故障恢复）的存储访问数量可能不是最小的。这种技术称为logging。日志记录还用于原子性之外的其他目的，侧栏9.4描述了其中的一些目的。</p>
+<p>9.3.1 Atomicity Logs</p>
+<p>原子性日志背后的基本思想是通过让应用程序两次记录对数据的每次更改，将日志存储的原子性与单元存储的速度结合起来。应用程序首先记录日志存储中的更改，然后install change in cell storage。有人可能会认为，两次写入数据肯定比只写入一次版本历史要开销昂贵，但这种分离允许进行专门的优化，从而使整个系统更快。</p>
+<p>第一次记录到日志存储中，通过创建所有变量的单个交错版本历史记录（称为日志），对快速写入进行了优化。描述每次数据更新的信息形成一个记录，应用程序将其附加到日志的末尾。因为只有一个日志，所以只需要一个指向日志结尾的指针，就可以找到追加系统中任何变量更改记录的位置。如果日志介质是磁盘，而磁盘只用于日志记录，并且磁盘存储管理系统连续分配扇区，则磁盘寻道臂只需在磁盘柱面已满时移动，从而消除了大多数寻道延迟。正如我们将看到的，恢复确实涉及到扫描日志，这是很昂贵的，但是恢复应该是很少发生的事件。因此，使用日志是遵循提示优化常见情况的一个示例。</p>
+<p>第二个记录，对单元存储进行了优化，以加快读取速度：应用程序只需覆盖该变量的前一个单元存储记录即可进行安装。保存在单元存储器中的记录可以看作是一个缓存，在读取时，它绕过了在日志中定位最新版本所需的工作。另外，通过不从日志中读取日志，日志磁盘的寻道臂可以保持在原位，为下一次更新做好准备。日志和安装这两个步骤成为图9.11中WRITE_NEW_VALUE接口的不同实现。图9.17说明了这两个步骤的实现（记录原子性。应用程序执行写入新值的操作，首先将新值的记录附加到日志日志存储中，然后通过overwrite将新值安装到单元存储中。应用程序只从单元存储器读取当前值。）。</p>
+<p>其基本思想是日志是操作结果的权威记录。单元存储只是一个引用副本；如果丢失，可以从日志中重建。在单元存储器中安装副本的目的是使记录和读取都更快。通过两次记录数据，我们可以在同一时间获得高性能的写入性能、高的读取性能和全或无原子性。</p>
+<p>有三种常见的日志记录配置，如图9.18所示。在这三种配置中，日志都驻留在非易失性存储中。对于内存数据库，单元存储完全驻留在某种易失性存储介质中。在第二种常见配置中，单元存储与日志一起驻留在非易失性存储中。最后，高性能数据库管理系统通常通过在易失性介质中实现单元存储的缓存来混合前面两种配置，并且潜在的独立的多级内存管理算法在缓存和非易失性单元存储之间移动数据。</p>
+<p>两次记录所有内容会给“全有或全无”原子性增加一个显著的复杂性，因为在记录更改和安装更改之间，系统可能会崩溃。为了维护原子性，日志记录系统遵循一个协议，该协议有两个基本要求。第一个要求是对日志记录和install cell storage顺序的限制。第二个要求是在每次崩溃后运行一个显式的恢复过程。（我们在图9.7中看到了使用恢复过程的策略预览，它使用了一个名为CHECK_AND_REPAIR的恢复过程。）</p>
+<p>BEGIN,CHANGE,OUTCOME,END</p>
+<p>outcome中的commit表示已经越过commit点，必须保证流程一定会执行完全，并且无法无痕回退</p>
+<p>end表示所有写入cell storage的尝试已成功</p>
+<p>内存型数据库，最简单的恢复方法是从后向前扫两遍，如果有OUTCOME Record，无论是COMMITED还是ABORTED，都称为winners</p>
+<p>然后在正向扫描，对于commited，都执行redo。</p>
+<p>直写非易失性存储型数据库，从后向前扫，将第一条不是END记录的事务都放入losers，向前遇到losers的change记录，执行undo。向后扫一遍，执行commited事务的redo。最后，为所有loser记录end record。不需要执行已经end的事务的redo</p>
+<p>redo和undo必须是blind writes，保持idempotent</p>
+<p>undo logging/rollback recovery：commited表示已经写入cell storage，不需要end</p>
+<p>redo logging/roll-forward recovery：不需要undo，因为install一定在commit之后，但需要install commited</p>
+<p>checkpoint：偶尔写一些额外信息，减小log scan，加速恢复。具体：记录以及开始但没达到end record的标识符和他们的pending/committed/aborted状态，恢复时，在checkpoint且之后没有end的actions都认作是loser，等到达到每个loser的begin，就可结束</p>
+<p>Mark-point：只有等前一个事务marked或不再是pending，才能开启新事务。marked之前需要new version。读当前值时，需要找到更前事务，等它不是pending，如果还是committed，就选用它。write时，需要是自己创建的新版本才能写入。最后commit或abort</p>
+<p>Read-capture：read current value时，找到执行id比本调用者id低的，等待他不是pending，如果commitd，读取它，并将hwm设为max(callerID,hwm)。在事务想要为要使用变量操作new version时，要进行判断，如果本callerID小于hwm/callerID小于变量最晚操作的操作者id（试图盲写），则abort并停止线程。事后改正，乐观。</p>
+<p>before-of-after应用:保存在乱序执行之前的(OOOE)指令执行顺序，当指令集合在乱序执行后按照原有指令顺序将结果提交。如同一个architectural register在不同的指令顺序中被翻译成不同的physical register，使得前后指令可以并行执行。</p>
+<p>Systemwide lock等同于simple serialization，有两个决定选择加锁元素合理性的原则：simple locking和two-phase locking</p>
+<p>Simple locking：需要拿到每个共享变量的锁，需要在做完全部更新或abort后才能释放锁。lock point：获取到所有锁的时刻，此时形成lock set。simple locking需要lock set作为开始事务的参数，等到全部获取才能开始。外部维护有序列表，某事物达到lock point时加入，释放锁时移出。在可能需要了解很多变量的情况下低效。</p>
+<p>Two-Phase Locking:好处是不用提前预知需要锁住的变量。注意在end前不要释放任何变量的锁是实现abort的关键。无需记录锁到日志因为恢复时不需要，log已经被锁保证过正确顺序。在对任何数据进行读、写操作之前，事务首先要获得锁，在释放一个锁之后，事务不再获得任何其他锁。</p>
+<p><strong>Performance Optimizations</strong>：两种提高性能的复杂：physical locking和adding lock compatibility modes。前者具体是指logging changes to和locking blocks对应于磁盘扇区而非独立的数据对象；后者具体是指增加兼容模式，获取锁时指定读还是写，如果可以兼容，则可以重入锁（多读者，单一写者模型）</p>
+<p>Deadlock；making progress：悲观方法：先验措施，避免死锁。如：locking ordering：给每个锁唯一编号，要求各个事务以向上的数字顺序获得锁，这样有最大数字锁的线程总能进展，问题是不是每个进程能预知自己需要什么锁；乐观方法：让线程前进，探查死锁，想办法修复。如backing out：可以以任意顺序获得锁，但如果试图获取一个已被获取的锁A，且数字比自己已获取的小，则undo行为直到释放了本人数字最大的锁，等到A可用，acquire A，并redo那些undo的事务；Time Expiration：设置timer，上限是需要获得所有锁的时间，死锁即超时，aborts事务。否则其他事务超时并aborts。这种方法中获得合适的expire time很难。Cycle detection：维护wait-for graph，它展示什么事务获取/等待什么锁，当事务尝试获取锁失败开始wait，manager检测图，看是否有环，如果有，manager选中一些，abort他们。livelock：都在努力破解，恰巧都失败了，又陷入死循环，如不断重启让步。解决方法：exponential random backoff：aborts并释放锁后，lock manager推迟一个随机时间重启线程</p>
+<h1 id="Chapter-10：Consistency"><a href="#Chapter-10：Consistency" class="headerlink" title="Chapter 10：Consistency"></a>Chapter 10：Consistency</h1><h2 id="Constraints-and-Interface-Consistency"><a href="#Constraints-and-Interface-Consistency" class="headerlink" title="Constraints and Interface Consistency"></a>Constraints and Interface Consistency</h2><p>严格一致性、最终一致性</p>
+<h2 id="Cache-Coherence"><a href="#Cache-Coherence" class="headerlink" title="Cache Coherence"></a>Cache Coherence</h2><p>对于非write-through缓存，当并发访问第二副本，可能有不一致，当并发线程有自己的缓存，write-through也不起作用，有三种办法。</p>
+<p>有过期时间的最终一致性：限制dns记录的生存时间。主机也可以主动提供一致性：在一个小时内同时响应新旧IP；或者修改TTL到5分钟，然后一小时后修改到新IP</p>
+<p>用荧光笔获得严格一致性：为想要严格一致的变量标识”Don’t cache me”.如Java中的volatile，它保证修改的值会立即被更新到主存，当有其他线程需要读取时，它会去内存中读取新值</p>
+<p>用Snoopy缓存获得严格一致性：利用memory bus，其它cache监听bus，如果有缓存在更新，那么使它对应位置的缓存失效，或者取得这个更新值并更新自己的缓存。</p>
+<p>sweeping simplification:replicated state machine，每次输入相同，因为状态机只根据输入和先前状态转变，所以都相同，</p>
+<h2 id="Durable-Storage-Revisited：Widely-Separated-Replicas"><a href="#Durable-Storage-Revisited：Widely-Separated-Replicas" class="headerlink" title="Durable Storage Revisited：Widely Separated Replicas"></a>Durable Storage Revisited：Widely Separated Replicas</h2><p>逻辑备份是修改文件、记录，而物理备份常常有关于mirror，是如sector的备份。</p>
+<p>single state machine:更新master，它更新其它分支.这种模式需要加强：主分支仅发放更改/日志/可执行语句、减少副本表现不一致的时间、分割大数据库、每个划分有不同的master、错误检测、不顾对顺序不敏感的系统</p>
+<p>保障数据完整性：各方计算witness（hash）</p>
+<p>读副本和多数机制：Qr+Qw&gt;Nreplicas，这意味着至少要写Qr个副本，才能成功（其它的仍然继续）；至少读Qw个副本并且值/hash一致，才能认为读到</p>
+<p>备份：增量式备份或者部分备份（不备份那些易从其它文件构建的文件）</p>
+<h2 id="Reconciliation"><a href="#Reconciliation" class="headerlink" title="Reconciliation"></a>Reconciliation</h2><p>有部分自产生不一致</p>
+<p>Occasionally Connected Operation:悲观情况下，当主机1断开连接，它标识所有主机2可能要用的，阻止FS对主机1marked的文件的修改。发现不同的方法：内容比对/时间戳/全局代序数</p>
+<p>调解两文件：左右文件夹，时间戳管理，维护上一次调解的时间。如果一个相同一个更新，则将更新的作为权威版本；如果两个都更新，则加入冲突列表；如果两个都更旧，则上一次调解就有错。接下来处理仅仅只有一边持有的文件：如果持有边的上一次调解等于维护时间，则删掉它。否则是一边创建了新文件，或者是一边修改了另一边删掉了的文件（在它那边的版本），此时直接将文件复制到另一边。</p>
+<p>可以提升但引入复杂性：不要求用户修改，只是通知；但引入不一致且用户不一定协调。引入基于文件数据和语义的算法程序自行解决冲突，但它不一定适用于其它场景。</p>
+<p>Clock Coordination：把两边时钟的不同也纳入考虑范围</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Benjamin Shen</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2021/01/19/Notes-on-Principles-of-Computer-System-Design/">http://example.com/2021/01/19/Notes-on-Principles-of-Computer-System-Design/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">Benjamin Shen's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2021/01/18/hello-world/"><img class="next-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Hello World</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/null" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">Benjamin Shen</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-1%EF%BC%9ASystems"><span class="toc-number">1.</span> <span class="toc-text">Chapter 1：Systems</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-2%EF%BC%9AElements-of-Computer-System-Organization"><span class="toc-number">2.</span> <span class="toc-text">Chapter 2：Elements of Computer System Organization</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-3%EF%BC%9AThe-Design-of-Naming-Schemes"><span class="toc-number">3.</span> <span class="toc-text">Chapter 3：The Design of Naming Schemes</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-4%EF%BC%9AEnforcing-Modularity-with-Clients-and-Services"><span class="toc-number">4.</span> <span class="toc-text">Chapter 4：Enforcing Modularity with Clients and Services</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-5%EF%BC%9AEnforcing-Modularity-with-Virtualization"><span class="toc-number">5.</span> <span class="toc-text">Chapter 5：Enforcing Modularity with Virtualization</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Operating-System"><span class="toc-number">5.1.</span> <span class="toc-text">Operating System</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-6%EF%BC%9APerformance"><span class="toc-number">6.</span> <span class="toc-text">Chapter 6：Performance</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Designing-for-Performance"><span class="toc-number">6.1.</span> <span class="toc-text">Designing for Performance</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Multilevel-Memories"><span class="toc-number">6.2.</span> <span class="toc-text">Multilevel Memories</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Scheduling"><span class="toc-number">6.3.</span> <span class="toc-text">Scheduling</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-8%EF%BC%9AFault-Tolerance"><span class="toc-number">7.</span> <span class="toc-text">Chapter 8：Fault Tolerance</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Fault-Failures-and-Fault-Tolerant-Design"><span class="toc-number">7.1.</span> <span class="toc-text">Fault,Failures,and Fault Tolerant Design</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Measures-of-Reliability-and-Failure-Tolerance"><span class="toc-number">7.2.</span> <span class="toc-text">Measures of Reliability and Failure Tolerance</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tolerating-Active-Faults"><span class="toc-number">7.3.</span> <span class="toc-text">Tolerating Active Faults</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Systematically-Applying-Redundancy"><span class="toc-number">7.4.</span> <span class="toc-text">Systematically Applying Redundancy</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-9%EF%BC%9AAtomicity"><span class="toc-number">8.</span> <span class="toc-text">Chapter 9：Atomicity</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Chapter-10%EF%BC%9AConsistency"><span class="toc-number">9.</span> <span class="toc-text">Chapter 10：Consistency</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Constraints-and-Interface-Consistency"><span class="toc-number">9.1.</span> <span class="toc-text">Constraints and Interface Consistency</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Cache-Coherence"><span class="toc-number">9.2.</span> <span class="toc-text">Cache Coherence</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Durable-Storage-Revisited%EF%BC%9AWidely-Separated-Replicas"><span class="toc-number">9.3.</span> <span class="toc-text">Durable Storage Revisited：Widely Separated Replicas</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Reconciliation"><span class="toc-number">9.4.</span> <span class="toc-text">Reconciliation</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2021/01/19/Notes-on-Principles-of-Computer-System-Design/" title="Notes on Principles of Computer System Design"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Notes on Principles of Computer System Design"/></a><div class="content"><a class="title" href="/2021/01/19/Notes-on-Principles-of-Computer-System-Design/" title="Notes on Principles of Computer System Design">Notes on Principles of Computer System Design</a><time datetime="2021-01-19T04:16:21.000Z" title="发表于 2021-01-19 12:16:21">2021-01-19</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/01/18/hello-world/" title="Hello World"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Hello World"/></a><div class="content"><a class="title" href="/2021/01/18/hello-world/" title="Hello World">Hello World</a><time datetime="2021-01-17T16:19:28.546Z" title="发表于 2021-01-18 00:19:28">2021-01-18</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By Benjamin Shen</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></body></html>
